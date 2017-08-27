@@ -9,9 +9,9 @@ batch_size = 10 # Every how many episodes to do a param update
 learning_rate = 1e-4
 gamma = 0.99 # Discount factor for reward
 decay_rate = 0.99 # Decay factor for RMSProp leaky sum of grad^2
-render = True
+render = True 
 save_path = 'models/pong.ckpt'
-MAX_EPISODE_NUMBER = 200
+MAX_EPISODE_NUMBER = 36000 
 
 def discount_rewards(r):
     """Take 1D float array of rewards and compute discounted reward"""
@@ -130,6 +130,6 @@ while True:
         if episode_number % 10 == 0:
             print('ep {}: reward: {}, mean reward: {:3f}'.format(episode_number, reward_sum, running_reward))
 
-        if episode_number % 50 == 0:
+        if episode_number % 100 == 0:
             saver.save(sess, save_path, global_step=episode_number)
             print("SAVE MODEL #{}".format(episode_number))
