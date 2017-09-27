@@ -152,8 +152,8 @@ class DQN(object):
             [self.eval_out, self.target_out],
             feed_dict={self.x: eval_samples, self.x_: target_samples},
         )
-        reward = samples[:, self.feature_dim]
-        eval_act = samples[:, self.feature_dim+1].astype(int)
+        eval_act = samples[:, self.feature_dim].astype(int)
+        reward = samples[:, self.feature_dim+1]
         done = samples[:, self.feature_dim+2]
 
         q_target = eval_labels.copy()

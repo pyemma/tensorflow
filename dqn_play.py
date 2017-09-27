@@ -3,7 +3,7 @@ from dqn import DQN
 
 env = gym.make('CartPole-v0')
 
-dqn = DQN(4, 2, [10, 20, 10])
+dqn = DQN(4, 2, [10, 20, 10], memory_size=5000)
 running_score = 0.0
 num_epsiode = 0
 num_steps = 0
@@ -15,6 +15,7 @@ for _ in range(1000):
         num_steps += 1
         action = dqn.action(state)
         next_state, reward, done, _ = env.step(action)
+        reward = -100 if done else 0.1
         dqn.remember(state, action, reward, done, next_state)
         state = next_state
 
@@ -25,11 +26,11 @@ for _ in range(1000):
 
         if done:
             running_score += t
-            break
+            break;
 
     num_epsiode += 1
     dqn.decrease_epsilon()
-
     if num_epsiode % 100 == 0:
+        dqn.decrease_epsilon()
         print("Current running score is: %.2f" %(running_score / 100))
         running_score = 0.0
