@@ -21,13 +21,13 @@ class DQN(object):
         feature_dim,
         action_dim,
         hidden_dims,
-        learning_rate = 1e-4,
-        gamma = 0.9,
-        memory_size = 10000,
-        batch_size = 32,
-        epsilon = 0.5,
-        epsilon_decay = 0.95,
-        epsilon_min = 0.01,
+        learning_rate=1e-4,
+        gamma=0.9,
+        memory_size=10000,
+        batch_size=32,
+        epsilon=0.5,
+        epsilon_decay=0.95,
+        epsilon_min=0.01,
     ):
         self.feature_dim = feature_dim
         self.action_dim = action_dim
@@ -51,6 +51,8 @@ class DQN(object):
 
         self.sess = tf.InteractiveSession()
         self.sess.run(tf.global_variables_initializer())
+
+        self.saver = tf.train.Saver()
 
 
     def _build_graph(self):
@@ -144,6 +146,9 @@ class DQN(object):
             return np.random.randint(0, self.action_dim-1)
         return np.argmax(self.eval_out.eval(feed_dict={self.x: np.reshape(state, [1, 4])}))
 
+    def play(self, state):
+        return np.argmax(self.eval_out.eval(feed_dict={self.x: np.reshape(state, [1, 4])}))
+
     def learn(self):
         samples = self.memory[np.random.choice(min(self.counter, self.memory_size), self.batch_size)]
         eval_samples = samples[:, : self.feature_dim]
@@ -159,3 +164,9 @@ class DQN(object):
         q_target = eval_labels.copy()
         q_target[np.arange(self.batch_size), eval_act] = reward + self.gamma * np.max(target_labels, axis=1) * (1 - done)
         self.sess.run(self.train, feed_dict={self.x: eval_samples, self.y: q_target})
+
+    def save(self, model_path):
+        save_path = self.saver.save(self.sess, model_path)
+
+    def load(self, model_path):
+        self.saver.restore(self.sess, model_path)
