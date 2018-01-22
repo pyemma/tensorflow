@@ -44,8 +44,14 @@ class CartPolePlay(object):
             num_epsiode += 1
             self.dqn.decrease_epsilon()
             if num_epsiode % 100 == 0:
-                print("Current running score is: %.2f" % (running_score / 100))
+                running_score /= 100
+                print("Current running score is: %.2f" % running_score)
+                if running_score > 195.0:
+                    print("HaHa, solved in: %d" % num_epsiode)
+                    return True
                 running_score = 0.0
+        return False
+
 
     def play(self, num_epsiode):
         total_score = 0.0

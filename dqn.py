@@ -143,7 +143,7 @@ class DQN(object):
 
     def action(self, state):
         if np.random.uniform() < self.epsilon:
-            return np.random.randint(0, self.action_dim-1)
+            return np.random.randint(0, self.action_dim)
         return np.argmax(self.eval_out.eval(feed_dict={self.x: np.reshape(state, [1, 4])}))
 
     def play(self, state):
