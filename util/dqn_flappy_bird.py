@@ -4,11 +4,11 @@ from collections import namedtuple
 
 
 class DQN(object):
-    """A simple version of Deep Q-Learning Network.
+    """A simple version of Deep Q-Learning Network for flappy bird. TODO: refactor it to make it more general.
 
     Args:
         sess:               Tensorflow session
-        env:                OpenAI gym
+        game_state:         GameState of flappy bird
         q_model:            Model for Q-Learning Graph
         target_model:       Model for Q-Target Value Graph
         batch_size:         Batch size for each training step
@@ -26,7 +26,8 @@ class DQN(object):
     def __init__(
         self,
         sess,
-        env,
+        game_state,
+        state_processor,
         q_model,
         target_model,
         actions,
@@ -40,7 +41,8 @@ class DQN(object):
         step_each_epsiode=200,
     ):
         self.sess = sess
-        self.env = env
+        self.game_state = game_state
+        self.state_processor = state_processor
         self.q_model = q_model
         self.target_model = target_model
         self.actions = actions
@@ -67,14 +69,23 @@ class DQN(object):
         epsilon = self.epsilon_start
 
         for ep in range(epsiode):
-            state = self.env.reset()
+            frame, reward, done = self.game_state.frame_step([1, 0]) # do nothing at the beginning
+            frame = self.state_processor.process(self.sess, frame)
+            state = np.dstack((frame, frame, frame))
             score = 0.0
             done = False
             while not done:
                 num_step += 1
-                action = self._action(self._norm(state), epsilon)
-                next_state, reward, done, _ = self.env.step(action)
-                reward = -100 if done else 0.1
+                action = self._action([state], epsilon)
+                print(action)
+                actions = np.zeros(len(self.actions))
+                actions[action] = 1.0
+                next_frame, reward, done = self.game_state.frame_step(actions)
+                next_state = state
+                next_state[:, :, 0:2] = next_state[:, :, 1:3]
+                next_state[:, :, 2] = self.state_processor.process(self.sess, next_frame)
+                reward = -100 if done else 1
+
                 self._remember(state, action, reward, next_state, done)
                 state = next_state
 
@@ -85,37 +96,26 @@ class DQN(object):
             if (ep+1) % self.step_to_copy_graph == 0:
                 self._copy_graph()
 
+            if epsilon > self.epsilon_end:
+                epsilon *= self.epsilon_decay
+
             if len(scores) == 100:
                 scores.pop(0)
 
             scores.append(score)
 
-            print("Running score: %.2f" % (sum(scores) / 100.0))
-            if sum(scores) / 100.0 > 195.0:
-                print("HaHa, solved in: %d" % ep)
-                return True
+            print("Running score: %.2f" % (sum(scores) / len(scores)))
 
-            if epsilon > self.epsilon_end:
-                epsilon *= self.epsilon_decay
-
-    def play(self):
-        state = self.env.reset()
-        done = False
-        step = 0
-        while not done:
-            self.env.render()
-            action = self._action(self._norm(state), 0.0)
-            state, _, done, _ = self.env.step(action)
-            step += 1
-        print("Steps: %d" % step)
-
-    def _norm(self, state):
-        """Helper function to reshape state of 1d to 2d
-
-        Args:
-            state:      1d array to be reshaped to 2d
-        """
-        return np.reshape(state, [1, state.shape[0]])
+    # def play(self):
+    #     state = self.env.reset()
+    #     done = False
+    #     step = 0
+    #     while not done:
+    #         self.env.render()
+    #         action = self._action(self._norm(state), 0.0)
+    #         state, _, done, _ = self.env.step(action)
+    #         step += 1
+    #     print("Steps: %d" % step)
 
     def _action(self, state, epsilon):
         """Use epsilon greedy policy to select action
