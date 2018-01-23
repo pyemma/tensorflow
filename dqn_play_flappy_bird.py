@@ -7,8 +7,8 @@ import numpy as np
 import tensorflow as tf
 import game.wrapped_flappy_bird as game
 
-q_model = ConvNN([80, 80, 3], 2, scope='q_model')
-target_model = ConvNN([80, 80, 3], 2, scope='target_model')
+q_model = ConvNN([80, 80, 3], 2, scope='q_model', learning_rate=1e-2)
+target_model = ConvNN([80, 80, 3], 2, scope='target_model', learning_rate=1e-2)
 
 sess = tf.InteractiveSession()
 game_state = game.GameState()
@@ -21,10 +21,11 @@ dqn = DQN(
     q_model,
     target_model,
     [0, 1],
-    memory_size=10000,
+    memory_size=5000,
     epsilon_start=1.0,
-    epsilon_decay=0.995,
-    batch_size=32,
+    epsilon_end=0.1,
+    epsilon_decay=0.99,
+    batch_size=64,
     step_to_copy_graph=100)
 
 sess.run(tf.global_variables_initializer())
