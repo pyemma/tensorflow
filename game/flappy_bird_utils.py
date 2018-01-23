@@ -1,3 +1,6 @@
+"""
+This file is copied from https://github.com/yenchenlin/DeepLearningFlappyBird
+"""
 import pygame
 import sys
 def load():
