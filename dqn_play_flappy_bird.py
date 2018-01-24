@@ -21,11 +21,11 @@ dqn = DQN(
     q_model,
     target_model,
     [0, 1],
-    memory_size=5000,
+    memory_size=10000,
     epsilon_start=1.0,
     epsilon_end=0.1,
-    epsilon_decay=0.99,
-    batch_size=64,
+    epsilon_decay=0.999,
+    batch_size=128,
     step_to_copy_graph=100)
 
 sess.run(tf.global_variables_initializer())

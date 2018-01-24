@@ -71,23 +71,31 @@ class DQN(object):
         for ep in range(epsiode):
             frame, reward, done = self.game_state.frame_step([1, 0]) # do nothing at the beginning
             frame = self.state_processor.process(self.sess, frame)
+            # state = np.dstack((frame,))
             state = np.dstack((frame, frame, frame))
             score = 0.0
             done = False
             while not done:
                 num_step += 1
                 action = self._action([state], epsilon)
-                print(action)
                 actions = np.zeros(len(self.actions))
                 actions[action] = 1.0
                 next_frame, reward, done = self.game_state.frame_step(actions)
-                next_state = state
-                next_state[:, :, 0:2] = next_state[:, :, 1:3]
-                next_state[:, :, 2] = self.state_processor.process(self.sess, next_frame)
-                reward = -100 if done else 1
+                next_frame = self.state_processor.process(self.sess, next_frame)
+                # next_state = np.dstack((next_frame - frame,)) if not done
+                if not done:
+                    next_state = state
+                    next_state[:, :, 0:2] = next_state[:, :, 1:3]
+                    next_state[:, :, 2] = next_frame
+                else:
+                    next_state = state
+                    next_state[:, :, 0:2] = next_state[:, :, 1:3]
+                    next_state[:, :, 2] = next_state[:, :, 1]
+                    reward = -100
 
                 self._remember(state, action, reward, next_state, done)
                 state = next_state
+                frame = next_frame
 
                 score += 1.0
 
@@ -125,7 +133,8 @@ class DQN(object):
             epsilon:    Paramter controlling the exploit/explore effect of epsilon greedy policy
         """
         if np.random.uniform() < epsilon:
-            return np.random.randint(0, len(self.actions))
+            return 1 if np.random.rand() < 0.1 else 0
+            # return np.random.randint(0, len(self.actions))
         return np.argmax(self.q_model.predict(self.sess, state))
 
     def _remember(self, state, action, reward, next_state, done):
