@@ -3,3 +3,6 @@
 models/*
 the-movies-dataset/*
 *.csv
+data/*
+.DS_Store
+*.pyc

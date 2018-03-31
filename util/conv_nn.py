@@ -31,12 +31,13 @@ class ConvNN(object):
             self.predictions = tf.contrib.layers.fully_connected(fc2, output_dim, activation_fn=None)
 
             self.loss = tf.reduce_mean(tf.squared_difference(self.y_pl, self.predictions))
+            tf.summary.scalar("loss", self.loss)
+            self.merged = tf.summary.merge_all()
             self.train = tf.train.RMSPropOptimizer(learning_rate).minimize(self.loss)
 
     def predict(self, sess, X):
-
         return sess.run(self.predictions, feed_dict={self.X_pl: X})
 
     def update(self, sess, X, y):
-
-        sess.run(self.train, feed_dict={self.X_pl: X, self.y_pl: y})
+        summary, _ = sess.run([self.merged, self.train], feed_dict={self.X_pl: X, self.y_pl: y})
+        return summary

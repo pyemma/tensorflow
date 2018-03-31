@@ -1,5 +1,6 @@
 import numpy as np
 import tensorflow as tf
+import datetime
 from collections import namedtuple
 
 
@@ -56,6 +57,8 @@ class DQN(object):
         self.step_each_epsiode = step_each_epsiode
 
         self.memory = []
+        logdir = "tensorboard/flappy_bird/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+        self.train_writer = tf.summary.FileWriter(logdir, self.sess.graph)
 
 
     def train(self, epsiode=1000):
@@ -71,8 +74,7 @@ class DQN(object):
         for ep in range(epsiode):
             frame, reward, done = self.game_state.frame_step([1, 0]) # do nothing at the beginning
             frame = self.state_processor.process(self.sess, frame)
-            # state = np.dstack((frame,))
-            state = np.dstack((frame, frame, frame))
+            state = np.dstack((frame, frame, frame, frame))
             score = 0.0
             done = False
             while not done:
@@ -82,15 +84,14 @@ class DQN(object):
                 actions[action] = 1.0
                 next_frame, reward, done = self.game_state.frame_step(actions)
                 next_frame = self.state_processor.process(self.sess, next_frame)
-                # next_state = np.dstack((next_frame - frame,)) if not done
                 if not done:
                     next_state = state
-                    next_state[:, :, 0:2] = next_state[:, :, 1:3]
-                    next_state[:, :, 2] = next_frame
+                    next_state[:, :, 0:3] = next_state[:, :, 1:4]
+                    next_state[:, :, 3] = next_frame
                 else:
                     next_state = state
-                    next_state[:, :, 0:2] = next_state[:, :, 1:3]
-                    next_state[:, :, 2] = next_state[:, :, 1]
+                    next_state[:, :, 0:3] = next_state[:, :, 1:4]
+                    next_state[:, :, 3] = next_state[:, :, 2]
                     reward = -100
 
                 self._remember(state, action, reward, next_state, done)
@@ -99,7 +100,10 @@ class DQN(object):
 
                 score += 1.0
 
-            self._learn()
+            summary = self._learn()
+
+            self.train_writer.add_summary(summary, ep)
+
 
             if (ep+1) % self.step_to_copy_graph == 0:
                 self._copy_graph()
@@ -113,17 +117,6 @@ class DQN(object):
             scores.append(score)
 
             print("Running score: %.2f" % (sum(scores) / len(scores)))
-
-    # def play(self):
-    #     state = self.env.reset()
-    #     done = False
-    #     step = 0
-    #     while not done:
-    #         self.env.render()
-    #         action = self._action(self._norm(state), 0.0)
-    #         state, _, done, _ = self.env.step(action)
-    #         step += 1
-    #     print("Steps: %d" % step)
 
     def _action(self, state, epsilon):
         """Use epsilon greedy policy to select action
@@ -167,7 +160,8 @@ class DQN(object):
         q_target = q_labels.copy()
         q_target[np.arange(self.batch_size), np.array(actions)] = np.array(rewards) + self.gamma * np.max(target_labels, axis=1) * (1 - np.array(dones))
 
-        self.q_model.update(self.sess, np.array(q_X), q_target)
+        summary = self.q_model.update(self.sess, np.array(q_X), q_target)
+        return summary
 
     def _copy_graph(self):
         q_params = [t for t in tf.trainable_variables() if t.name.startswith(self.q_model.scope)]
