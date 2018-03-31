@@ -6,3 +6,4 @@ the-movies-dataset/*
 data/*
 .DS_Store
 *.pyc
+tensorboard/*
